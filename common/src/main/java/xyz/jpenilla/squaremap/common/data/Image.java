@@ -180,6 +180,7 @@ public final class Image {
         final double zFactor = cfg.MAP_RELIEF_EXAGGERATION * Math.pow(step, cfg.MAP_RELIEF_ZOOM_BOOST);
         final double scale = 180.0D * cfg.MAP_RELIEF_STRENGTH;
         final double flat = Math.cos(SUN_ZENITH);
+        final boolean compensate = "hard-light".equalsIgnoreCase(cfg.MAP_RELIEF_BLEND_MODE);
         for (int x = 0; x < size; x++) {
             for (int z = 0; z < size; z++) {
                 final float c = h[x][z];
@@ -200,10 +201,41 @@ public final class Image {
                 }
                 final double shade = Math.cos(SUN_ZENITH) * Math.cos(slope)
                     + Math.sin(SUN_ZENITH) * Math.sin(slope) * Math.cos(SUN_AZIMUTH - aspect);
-                final int v = (int) Math.round(RELIEF_NEUTRAL + (shade - flat) * scale);
-                out.setSample(baseX + x, baseZ + z, 0, Mth.clamp(v, 0, 255));
+                int v = Mth.clamp((int) Math.round(RELIEF_NEUTRAL + (shade - flat) * scale), 0, 255);
+                if (compensate) {
+                    final int color = step > 1 && this.smooth() ? this.averageColor(x * step, z * step, step) : this.pixels[x * step][z * step];
+                    v = hardLightFor(v, luminance(color), cfg.MAP_RELIEF_BRIGHT_KNEE);
+                }
+                out.setSample(baseX + x, baseZ + z, 0, v);
             }
         }
+    }
+
+    /** Relative luminance (0..1) of an RGB colour; 0 for transparent or unrendered pixels. */
+    private static double luminance(final int color) {
+        if (color == 0 || color == Integer.MIN_VALUE) {
+            return 0;
+        }
+        return (0.2126D * (color >> 16 & 0xFF) + 0.7152D * (color >> 8 & 0xFF) + 0.0722D * (color & 0xFF)) / 255.0D;
+    }
+
+    /**
+     * The relief value that, blended with hard-light over a colour of luminance {@code y}, gives what soft-light would
+     * give with {@code v}. Soft-light can't darken near-white, so colours brighter than {@code knee} are darkened as if
+     * they were {@code knee} bright instead.
+     */
+    private static int hardLightFor(final int v, final double y, final double knee) {
+        final double s = v / 255.0D;
+        final double out;
+        if (s <= 0.5D) {
+            out = (1 - (1 - 2 * s) * (1 - Math.min(y, knee))) / 2;
+        } else if (y >= 0.999D) {
+            out = 0.5D;
+        } else {
+            final double d = y <= 0.25D ? ((16 * y - 12) * y + 4) * y : Math.sqrt(y);
+            out = 0.5D + Mth.clamp((2 * s - 1) * (d - y) / (1 - y), 0.0D, 1.0D) / 2;
+        }
+        return Mth.clamp((int) Math.round(out * 255.0D), 0, 255);
     }
 
     /** Height difference per cell along x (east) or z (south), central where both neighbours exist. */

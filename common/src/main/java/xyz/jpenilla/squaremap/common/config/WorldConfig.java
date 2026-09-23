@@ -78,9 +78,12 @@ public final class WorldConfig extends AbstractWorldConfig<Config> {
         this.MAP_TINT_BRIGHTNESS = Mth.clamp(this.getDouble("map.texture-colors.tint-brightness", this.MAP_TINT_BRIGHTNESS), 0.5D, 2.0D);
     }
 
-    // Meridian: hill shading rendered as a separate layer the web map can switch on and off
+    // Meridian: hill shading rendered as a separate layer the web map can switch on and off. The layer is drawn with
+    // hard-light but pre-compensated per pixel to look like soft-light, except that colours brighter than bright-knee
+    // are shaded as if they were that bright, so snow and ice still show relief
     public boolean MAP_RELIEF = true;
-    public double MAP_RELIEF_STRENGTH = 0.5D;
+    public double MAP_RELIEF_STRENGTH = 1.0D;
+    public double MAP_RELIEF_BRIGHT_KNEE = 0.7D;
     public double MAP_RELIEF_EXAGGERATION = 1.0D;
     public double MAP_RELIEF_ZOOM_BOOST = 0.5D;
     public double MAP_RELIEF_UNDERWATER = 0.5D;
@@ -92,6 +95,7 @@ public final class WorldConfig extends AbstractWorldConfig<Config> {
     private void reliefSettings() {
         this.MAP_RELIEF = this.getBoolean("map.relief.enabled", this.MAP_RELIEF);
         this.MAP_RELIEF_STRENGTH = Mth.clamp(this.getDouble("map.relief.strength", this.MAP_RELIEF_STRENGTH), 0.0D, 3.0D);
+        this.MAP_RELIEF_BRIGHT_KNEE = Mth.clamp(this.getDouble("map.relief.bright-knee", this.MAP_RELIEF_BRIGHT_KNEE), 0.0D, 1.0D);
         this.MAP_RELIEF_EXAGGERATION = Mth.clamp(this.getDouble("map.relief.exaggeration", this.MAP_RELIEF_EXAGGERATION), 0.1D, 10.0D);
         this.MAP_RELIEF_ZOOM_BOOST = Mth.clamp(this.getDouble("map.relief.zoom-boost", this.MAP_RELIEF_ZOOM_BOOST), 0.0D, 1.0D);
         this.MAP_RELIEF_UNDERWATER = Mth.clamp(this.getDouble("map.relief.underwater", this.MAP_RELIEF_UNDERWATER), 0.0D, 1.0D);
