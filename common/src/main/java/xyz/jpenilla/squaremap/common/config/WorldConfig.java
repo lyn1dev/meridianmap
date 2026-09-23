@@ -80,13 +80,13 @@ public final class WorldConfig extends AbstractWorldConfig<Config> {
 
     // Meridian: hill shading rendered as a separate layer the web map can switch on and off
     public boolean MAP_RELIEF = true;
-    public double MAP_RELIEF_STRENGTH = 1.0D;
+    public double MAP_RELIEF_STRENGTH = 0.5D;
     public double MAP_RELIEF_EXAGGERATION = 1.0D;
     public double MAP_RELIEF_ZOOM_BOOST = 0.5D;
     public double MAP_RELIEF_UNDERWATER = 0.5D;
     public String MAP_RELIEF_LABEL = "Relief";
     public boolean MAP_RELIEF_DEFAULT_HIDDEN = false;
-    public String MAP_RELIEF_BLEND_MODE = "soft-light";
+    public String MAP_RELIEF_BLEND_MODE = "hard-light";
     public double MAP_RELIEF_OPACITY = 1.0D;
 
     private void reliefSettings() {

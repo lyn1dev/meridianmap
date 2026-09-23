@@ -144,7 +144,7 @@ class LayerControl {
         const pane = S.map.getPane("relief") || S.map.createPane("relief");
         pane.style.zIndex = "250";
         pane.style.pointerEvents = "none";
-        pane.style.mixBlendMode = relief.blend_mode || "soft-light";
+        pane.style.mixBlendMode = relief.blend_mode || "hard-light";
         pane.style.opacity = String(relief.opacity ?? 1);
         this.reliefLayer = new SquaremapTileLayer(`tiles/${world.name}/relief/{z}/{x}_{y}.png`, {
             tileSize: 512,
