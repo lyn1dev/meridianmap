@@ -1,7 +1,12 @@
 package xyz.jpenilla.squaremap.common.data;
 
 import java.awt.Color;
+import java.awt.Transparency;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -28,8 +33,13 @@ import xyz.jpenilla.squaremap.common.util.FileUtil;
 public final class Image {
     private static final int TRANSPARENT = new Color(0, 0, 0, 0).getRGB();
     public static final int SIZE = 512;
-    /** Meridian: relief tiles are grey; this value leaves the colour underneath unchanged. */
+    /**
+     * Meridian: relief tiles are grey + alpha; this grey leaves the colour underneath unchanged, and pixels with
+     * nothing rendered under them are fully transparent (a blend over empty map would show the grey itself).
+     */
     private static final int RELIEF_NEUTRAL = 128;
+    private static final ComponentColorModel RELIEF_COLOR_MODEL = new ComponentColorModel(
+        ColorSpace.getInstance(ColorSpace.CS_GRAY), true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
     /** Sun in the north-west, 45 degrees up (the cartographic convention). */
     private static final double SUN_ZENITH = Math.toRadians(45.0D);
     private static final double SUN_AZIMUTH = Math.toRadians(360.0D - 315.0D + 90.0D);
@@ -183,6 +193,12 @@ public final class Image {
         final boolean compensate = "hard-light".equalsIgnoreCase(cfg.MAP_RELIEF_BLEND_MODE);
         for (int x = 0; x < size; x++) {
             for (int z = 0; z < size; z++) {
+                final int color = step > 1 && this.smooth() ? this.averageColor(x * step, z * step, step) : this.pixels[x * step][z * step];
+                if (color == 0) {
+                    // rendered, but nothing there
+                    out.setSample(baseX + x, baseZ + z, 1, 0);
+                    continue;
+                }
                 final float c = h[x][z];
                 if (Float.isNaN(c)) {
                     continue;
@@ -203,10 +219,10 @@ public final class Image {
                     + Math.sin(SUN_ZENITH) * Math.sin(slope) * Math.cos(SUN_AZIMUTH - aspect);
                 int v = Mth.clamp((int) Math.round(RELIEF_NEUTRAL + (shade - flat) * scale), 0, 255);
                 if (compensate) {
-                    final int color = step > 1 && this.smooth() ? this.averageColor(x * step, z * step, step) : this.pixels[x * step][z * step];
                     v = hardLightFor(v, luminance(color), cfg.MAP_RELIEF_BRIGHT_KNEE);
                 }
                 out.setSample(baseX + x, baseZ + z, 0, v);
+                out.setSample(baseX + x, baseZ + z, 1, 255);
             }
         }
     }
@@ -266,10 +282,8 @@ public final class Image {
                 throw new IOException("Failed to read image file '" + file.toAbsolutePath() + "', ImageIO.read(File) result is null. This means no " +
                     "supported image format was able to read it. The image file may have been malformed or corrupted, it will be overwritten.");
             }
-            if (relief && read.getType() != BufferedImage.TYPE_BYTE_GRAY) {
-                final BufferedImage gray = newReliefImage();
-                gray.getGraphics().drawImage(read, 0, 0, null);
-                return gray;
+            if (relief && !(read.getColorModel() instanceof ComponentColorModel && read.getRaster().getNumBands() == 2)) {
+                return reliefFromOpaque(read.getRaster());
             }
             return read;
         } catch (final IOException ex) {
@@ -333,12 +347,25 @@ public final class Image {
     }
 
     private static BufferedImage newReliefImage() {
-        final BufferedImage image = new BufferedImage(Image.SIZE, Image.SIZE, BufferedImage.TYPE_BYTE_GRAY);
-        final WritableRaster raster = image.getRaster();
+        final WritableRaster raster = RELIEF_COLOR_MODEL.createCompatibleWritableRaster(Image.SIZE, Image.SIZE);
         final int[] row = new int[Image.SIZE];
         Arrays.fill(row, RELIEF_NEUTRAL);
         for (int y = 0; y < Image.SIZE; y++) {
             raster.setSamples(0, y, Image.SIZE, 1, 0, row);
+        }
+        return new BufferedImage(RELIEF_COLOR_MODEL, raster, false, null);
+    }
+
+    /** Converts a relief tile from before relief tiles had alpha: neutral grey there meant nothing to shade. */
+    private static BufferedImage reliefFromOpaque(final Raster old) {
+        final BufferedImage image = newReliefImage();
+        final WritableRaster raster = image.getRaster();
+        for (int x = 0; x < Image.SIZE; x++) {
+            for (int y = 0; y < Image.SIZE; y++) {
+                final int v = old.getSample(x, y, 0);
+                raster.setSample(x, y, 0, v);
+                raster.setSample(x, y, 1, v == RELIEF_NEUTRAL ? 0 : 255);
+            }
         }
         return image;
     }
