@@ -132,7 +132,16 @@ public final class UpdateWorldData implements Runnable {
         zoom.put("def", worldConfig.ZOOM_DEFAULT);
         zoom.put("extra", worldConfig.ZOOM_EXTRA);
 
+        // Meridian: the hill-shading layer the web map can switch on and off
+        final Map<String, Object> relief = new HashMap<>();
+        relief.put("enabled", worldConfig.MAP_RELIEF);
+        relief.put("label", worldConfig.MAP_RELIEF_LABEL);
+        relief.put("default_hidden", worldConfig.MAP_RELIEF_DEFAULT_HIDDEN);
+        relief.put("blend_mode", worldConfig.MAP_RELIEF_BLEND_MODE);
+        relief.put("opacity", worldConfig.MAP_RELIEF_OPACITY);
+
         final Map<String, Object> settings = new HashMap<>();
+        settings.put("relief", relief);
         settings.put("spawn", spawn);
         settings.put("player_tracker", playerTracker);
         settings.put("zoom", zoom);

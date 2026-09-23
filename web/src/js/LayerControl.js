@@ -17,6 +17,8 @@ class LayerControl {
     tileLayer2;
     /** @type {L.Layer} */
     ignoreLayer;
+    /** @type {L.TileLayer | null} */
+    reliefLayer = null;
 
     init() {
         this.currentLayer = 0;
@@ -99,6 +101,8 @@ class LayerControl {
         this.tileLayer1 = this.createTileLayer(world);
         this.tileLayer2 = this.createTileLayer(world);
 
+        this.setupReliefLayer(world);
+
         // refresh player's control
         this.removeOverlay(this.playersLayer);
         if (world.player_tracker.show_controls) {
@@ -123,6 +127,35 @@ class LayerControl {
                 // when all tiles are loaded, switch to this layer
                 this.switchTileLayer();
             });
+    }
+    /**
+     * Meridian: hill shading drawn over the map tiles and blended with them, switchable like any other layer.
+     * @param world {World}
+     */
+    setupReliefLayer(world) {
+        if (this.reliefLayer != null) {
+            this.removeOverlay(this.reliefLayer);
+            this.reliefLayer = null;
+        }
+        const relief = world.relief;
+        if (relief == null || !relief.enabled) {
+            return;
+        }
+        const pane = S.map.getPane("relief") || S.map.createPane("relief");
+        pane.style.zIndex = "250";
+        pane.style.pointerEvents = "none";
+        pane.style.mixBlendMode = relief.blend_mode || "soft-light";
+        pane.style.opacity = String(relief.opacity ?? 1);
+        this.reliefLayer = new SquaremapTileLayer(`tiles/${world.name}/relief/{z}/{x}_{y}.png`, {
+            tileSize: 512,
+            minNativeZoom: 0,
+            maxNativeZoom: world.zoom.max,
+            errorTileUrl: "images/clear.png",
+            pane: "relief",
+        });
+        this.reliefLayer.id = "relief_layer";
+        this.reliefLayer.order = -100;
+        this.addOverlay(relief.label || "Relief", this.reliefLayer, relief.default_hidden === true);
     }
     updateTileLayer() {
         // redraw background tile layer

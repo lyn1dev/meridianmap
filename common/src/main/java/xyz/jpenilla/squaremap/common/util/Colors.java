@@ -77,6 +77,14 @@ public final class Colors {
         return 0xFF << 24 | r << 16 | g << 8 | b;
     }
 
+    /** Meridian: a grey texture colour tinted the way the game does it (channel multiply), then brightened. */
+    public static int multiply(final int texture, final int tint, final double brightness) {
+        final int r = (int) Math.min(255, (texture >> 16 & 0xFF) * (tint >> 16 & 0xFF) / 255.0D * brightness);
+        final int g = (int) Math.min(255, (texture >> 8 & 0xFF) * (tint >> 8 & 0xFF) / 255.0D * brightness);
+        final int b = (int) Math.min(255, (texture & 0xFF) * (tint & 0xFF) / 255.0D * brightness);
+        return 0xFF << 24 | r << 16 | g << 8 | b;
+    }
+
     public static int plantMapColor() {
         return rgb(MapColor.PLANT);
     }

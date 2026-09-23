@@ -64,7 +64,16 @@ export interface WorldSettings_Zoom {
     extra: number;
 }
 
+export interface WorldSettings_Relief {
+    enabled: boolean;
+    label: string;
+    default_hidden: boolean;
+    blend_mode: string;
+    opacity: number;
+}
+
 export interface WorldSettings {
+    relief?: WorldSettings_Relief;
     spawn: WorldSettings_Spawn;
     player_tracker: WorldSettings_PlayerTracker;
     zoom: WorldSettings_Zoom;

@@ -83,11 +83,11 @@ val buildFrontend = tasks.register<BuildFrontend>("buildFrontend") {
   outputDir = layout.buildDirectory.dir("web")
   workingDir = layout.settingsDirectory.dir("web")
   val isWindows = System.getProperty("os.name").lowercase().contains("win")
+  // Meridian fork: build the frontend with npm (bun isn't installed on our machines)
   command = if (isWindows) {
-    // Not sure if this will always work, Windows users can complain if it doesn't
-    listOf("bun", "run", "build")
+    listOf("cmd", "/c", "npm install --no-audit --no-fund && npm run build")
   } else {
-    listOf("bash", "-c", "bun run build")
+    listOf("bash", "-c", "npm install --no-audit --no-fund && npm run build")
   }
 }
 

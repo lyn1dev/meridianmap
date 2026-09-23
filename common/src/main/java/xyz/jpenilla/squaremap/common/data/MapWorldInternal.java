@@ -163,7 +163,15 @@ public abstract class MapWorldInternal implements MapWorld {
         if (special != -1) {
             return special;
         }
-        return Colors.rgb(state.getMapColor(null, null));
+        final int palette = Colors.rgb(state.getMapColor(null, null));
+        // Meridian: blocks the map palette shows get their real texture colour; invisible blocks stay invisible
+        if (palette != Colors.clearMapColor() && this.config().MAP_TEXTURE_COLORS) {
+            final int texture = TextureColors.get().color(state.getBlock());
+            if (texture != -1) {
+                return texture & 0x00FFFFFF;
+            }
+        }
+        return palette;
     }
 
     public void saveImage(final Image image) {

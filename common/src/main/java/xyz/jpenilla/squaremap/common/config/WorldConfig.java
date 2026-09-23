@@ -59,6 +59,55 @@ public final class WorldConfig extends AbstractWorldConfig<Config> {
         this.MAP_WATER_CHECKERBOARD = this.getBoolean("map.water.checkerboard", this.MAP_WATER_CHECKERBOARD);
     }
 
+    // Meridian: water shaded smoothly by its real depth (read from the ocean-floor heightmap), replacing
+    // clear-depth/checkerboard when enabled
+    public boolean MAP_WATER_GRADIENT = true;
+    public int MAP_WATER_GRADIENT_DEPTH = 40;
+
+    private void waterGradientSettings() {
+        this.MAP_WATER_GRADIENT = this.getBoolean("map.water.gradient.enabled", this.MAP_WATER_GRADIENT);
+        this.MAP_WATER_GRADIENT_DEPTH = Math.max(1, this.getInt("map.water.gradient.depth-scale", this.MAP_WATER_GRADIENT_DEPTH));
+    }
+
+    // Meridian: block colours averaged from the vanilla textures instead of the map palette
+    public boolean MAP_TEXTURE_COLORS = true;
+    public double MAP_TINT_BRIGHTNESS = 1.2D;
+
+    private void textureColorSettings() {
+        this.MAP_TEXTURE_COLORS = this.getBoolean("map.texture-colors.enabled", this.MAP_TEXTURE_COLORS);
+        this.MAP_TINT_BRIGHTNESS = Mth.clamp(this.getDouble("map.texture-colors.tint-brightness", this.MAP_TINT_BRIGHTNESS), 0.5D, 2.0D);
+    }
+
+    // Meridian: hill shading rendered as a separate layer the web map can switch on and off
+    public boolean MAP_RELIEF = true;
+    public double MAP_RELIEF_STRENGTH = 1.0D;
+    public double MAP_RELIEF_EXAGGERATION = 1.0D;
+    public double MAP_RELIEF_ZOOM_BOOST = 0.5D;
+    public double MAP_RELIEF_UNDERWATER = 0.5D;
+    public String MAP_RELIEF_LABEL = "Relief";
+    public boolean MAP_RELIEF_DEFAULT_HIDDEN = false;
+    public String MAP_RELIEF_BLEND_MODE = "soft-light";
+    public double MAP_RELIEF_OPACITY = 1.0D;
+
+    private void reliefSettings() {
+        this.MAP_RELIEF = this.getBoolean("map.relief.enabled", this.MAP_RELIEF);
+        this.MAP_RELIEF_STRENGTH = Mth.clamp(this.getDouble("map.relief.strength", this.MAP_RELIEF_STRENGTH), 0.0D, 3.0D);
+        this.MAP_RELIEF_EXAGGERATION = Mth.clamp(this.getDouble("map.relief.exaggeration", this.MAP_RELIEF_EXAGGERATION), 0.1D, 10.0D);
+        this.MAP_RELIEF_ZOOM_BOOST = Mth.clamp(this.getDouble("map.relief.zoom-boost", this.MAP_RELIEF_ZOOM_BOOST), 0.0D, 1.0D);
+        this.MAP_RELIEF_UNDERWATER = Mth.clamp(this.getDouble("map.relief.underwater", this.MAP_RELIEF_UNDERWATER), 0.0D, 1.0D);
+        this.MAP_RELIEF_LABEL = this.getString("map.relief.label", this.MAP_RELIEF_LABEL);
+        this.MAP_RELIEF_DEFAULT_HIDDEN = this.getBoolean("map.relief.default-hidden", this.MAP_RELIEF_DEFAULT_HIDDEN);
+        this.MAP_RELIEF_BLEND_MODE = this.getString("map.relief.blend-mode", this.MAP_RELIEF_BLEND_MODE);
+        this.MAP_RELIEF_OPACITY = Mth.clamp(this.getDouble("map.relief.opacity", this.MAP_RELIEF_OPACITY), 0.0D, 1.0D);
+    }
+
+    // Meridian: zoomed-out tiles average each block of pixels instead of picking one (no aliasing at country scale)
+    public boolean ZOOM_SMOOTH = true;
+
+    private void zoomSmoothSettings() {
+        this.ZOOM_SMOOTH = this.getBoolean("map.zoom.smooth-zoom-out", this.ZOOM_SMOOTH);
+    }
+
     public int ZOOM_MAX = 3;
     public int ZOOM_DEFAULT = 3;
     public int ZOOM_EXTRA = 2;

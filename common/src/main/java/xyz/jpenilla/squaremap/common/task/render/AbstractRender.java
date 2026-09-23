@@ -202,7 +202,7 @@ public abstract class AbstractRender implements Runnable {
     }
 
     protected final void mapRegion(final RegionCoordinate region) {
-        final Image image = new Image(region, this.mapWorld.tilesPath(), this.mapWorld.config().ZOOM_MAX);
+        final Image image = new Image(region, this.mapWorld.tilesPath(), this.mapWorld.config().ZOOM_MAX, this.mapWorld.config());
         final int startX = region.getChunkX();
         final int startZ = region.getChunkZ();
         final List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -315,13 +315,15 @@ public abstract class AbstractRender implements Runnable {
         }
         final int blockX = chunk.pos().getMinBlockX();
         final int blockZ = chunk.pos().getMinBlockZ();
+        final int[] height = new int[1];
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 if (!this.running()) {
                     return;
                 }
                 if (this.mapWorld.visibilityLimit().shouldRenderColumn(blockX + x, blockZ + z)) {
-                    image.setPixel(blockX + x, blockZ + z, this.scanBlock(chunk, x, z, lastY));
+                    final int color = this.scanBlock(chunk, x, z, lastY, height);
+                    image.setPixel(blockX + x, blockZ + z, color, height[0]);
                 }
             }
         }
@@ -335,7 +337,9 @@ public abstract class AbstractRender implements Runnable {
                 return;
             }
             if (this.mapWorld.visibilityLimit().shouldRenderColumn(blockX + x, blockZ)) {
-                image.setPixel(blockX + x, blockZ, this.scanBlock(chunk, x, 0, lastY));
+                final int[] height = new int[1];
+                final int color = this.scanBlock(chunk, x, 0, lastY, height);
+                image.setPixel(blockX + x, blockZ, color, height[0]);
             }
         }
     }
@@ -370,7 +374,8 @@ public abstract class AbstractRender implements Runnable {
         return lastY;
     }
 
-    private int scanBlock(final ChunkSnapshot chunk, final int imgX, final int imgZ, final int[] lastY) {
+    private int scanBlock(final ChunkSnapshot chunk, final int imgX, final int imgZ, final int[] lastY, final int[] heightOut) {
+        heightOut[0] = Integer.MIN_VALUE;
         int blockX = chunk.pos().getMinBlockX() + imgX;
         int blockZ = chunk.pos().getMinBlockZ() + imgZ;
 
@@ -393,14 +398,14 @@ public abstract class AbstractRender implements Runnable {
             final int glassColor = this.mapWorld.getMapColor(state);
             final float glassAlpha = state.getBlock() == Blocks.GLASS ? 0.25F : 0.5F;
             state = this.handleGlass(chunk, mutablePos);
-            final int color = this.getColor(chunk, imgX, imgZ, lastY, state, mutablePos);
+            final int color = this.getColor(chunk, imgX, imgZ, lastY, state, mutablePos, heightOut);
             return Colors.mix(color, glassColor, glassAlpha);
         }
 
-        return this.getColor(chunk, imgX, imgZ, lastY, state, mutablePos);
+        return this.getColor(chunk, imgX, imgZ, lastY, state, mutablePos, heightOut);
     }
 
-    private int getColor(final ChunkSnapshot chunk, final int imgX, final int imgZ, final int[] lastY, final BlockState state, final BlockPos.MutableBlockPos mutablePos) {
+    private int getColor(final ChunkSnapshot chunk, final int imgX, final int imgZ, final int[] lastY, final BlockState state, final BlockPos.MutableBlockPos mutablePos, final int[] heightOut) {
         int color = this.mapWorld.getMapColor(state);
 
         if (this.biomeColors != null) {
@@ -409,6 +414,16 @@ public abstract class AbstractRender implements Runnable {
         }
 
         final int odd = (imgX + imgZ & 1);
+        heightOut[0] = mutablePos.getY();
+
+        // Meridian: water shaded by its real depth
+        if (this.mapWorld.config().MAP_WATER_GRADIENT && !state.getFluidState().isEmpty()) {
+            final Fluid fluid = fluidTypeForRender(color, state.getFluidState());
+            if (fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER) {
+                lastY[imgX] = mutablePos.getY();
+                return this.waterGradient(chunk, imgX, imgZ, mutablePos, color, heightOut);
+            }
+        }
 
         final @Nullable DepthResult fluidDepthResult = findDepthIfFluid(mutablePos, state, chunk);
         if (fluidDepthResult != null) {
@@ -418,10 +433,50 @@ public abstract class AbstractRender implements Runnable {
         }
 
         final int curY = mutablePos.getY();
+        // Meridian: with the relief layer on, colour tiles stay unshaded; the shading lives in the relief tiles
+        if (this.mapWorld.config().MAP_RELIEF) {
+            lastY[imgX] = curY;
+            return Colors.removeAlpha(color);
+        }
         final double diffY = ((double) curY - lastY[imgX]) * 4.0D / (double) 4 + ((double) odd - 0.5D) * 0.4D;
         final byte colorOffset = (byte) (diffY > 0.6D ? 2 : (diffY < -0.6D ? 0 : 1));
         lastY[imgX] = curY;
         return Colors.shade(color, colorOffset);
+    }
+
+    /**
+     * Meridian: the biome water colour, mixed with the floor where it's shallow and darkened smoothly with depth.
+     * The depth comes from the ocean-floor heightmap (one lookup), or by walking down where it's missing.
+     */
+    private int waterGradient(final ChunkSnapshot chunk, final int imgX, final int imgZ, final BlockPos.MutableBlockPos surface, final int waterColor, final int[] heightOut) {
+        final int surfaceY = surface.getY();
+        final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(surface.getX(), surfaceY, surface.getZ());
+        int floorY;
+        if (chunk.hasHeightmap(Heightmap.Types.OCEAN_FLOOR)) {
+            floorY = Math.min(chunk.getHeight(Heightmap.Types.OCEAN_FLOOR, imgX, imgZ), surfaceY - 1);
+            pos.setY(floorY);
+        } else {
+            floorY = surfaceY;
+            do {
+                pos.setY(--floorY);
+            } while (floorY > chunk.getMinY() && !chunk.getBlockState(pos).getFluidState().isEmpty());
+        }
+        final BlockState floor = chunk.getBlockState(pos);
+        final int depth = Math.max(1, surfaceY - floorY);
+
+        int color = waterColor;
+        final int floorColor = this.mapWorld.getMapColor(floor);
+        if (floorColor != Colors.clearMapColor()) {
+            // shallow water shows the bottom: sandy shallows turn turquoise
+            final float shallow = Math.max(0.0F, (6.0F - depth) / 6.0F) * 0.5F;
+            color = Colors.mix(color, floorColor, shallow);
+        }
+        final double dark = 1.0D - 0.55D * (1.0D - Math.exp(-depth / (double) this.mapWorld.config().MAP_WATER_GRADIENT_DEPTH));
+        color = Colors.shade(color, (float) dark);
+
+        final double underwater = this.mapWorld.config().MAP_RELIEF_UNDERWATER;
+        heightOut[0] = underwater > 0 ? (int) Math.round(surfaceY - depth * underwater) : surfaceY;
+        return color;
     }
 
     private BlockState iterateDown(final ChunkSnapshot chunk, final BlockPos.MutableBlockPos mutablePos) {

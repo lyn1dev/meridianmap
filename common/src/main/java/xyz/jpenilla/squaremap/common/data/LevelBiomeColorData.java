@@ -57,7 +57,10 @@ public record LevelBiomeColorData(
             foliageColors.put(
                 biome,
                 biome.getSpecialEffects().foliageColorOverride()
-                    .orElse(Colors.mix(Colors.plantMapColor(), defaultFoliageColor(temperature, humidity), 0.85f))
+                    // Meridian: the game's own foliage colour for the biome (upstream nudged it toward the map palette's green)
+                    .orElse(world.config().MAP_TEXTURE_COLORS
+                        ? defaultFoliageColor(temperature, humidity)
+                        : Colors.mix(Colors.plantMapColor(), defaultFoliageColor(temperature, humidity), 0.85f))
                     .intValue()
             );
             waterColors.put(

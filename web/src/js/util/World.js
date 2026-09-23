@@ -21,6 +21,8 @@ class World {
     zoom;
     /** @type {WorldSettings_Spawn} */
     spawn;
+    /** @type {WorldSettings_Relief} */
+    relief;
 
     /**
      * @param json {Settings_World}
@@ -83,6 +85,7 @@ class World {
                 this.player_tracker = json.player_tracker;
                 this.zoom = json.zoom;
                 this.spawn = json.spawn;
+                this.relief = json.relief;
                 this.marker_update_interval = json.marker_update_interval;
                 this.tiles_update_interval = json.tiles_update_interval;
                 this.staticNeedsMarkerTick = true;

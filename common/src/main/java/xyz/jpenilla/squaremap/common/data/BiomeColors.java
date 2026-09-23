@@ -32,7 +32,8 @@ public final class BiomeColors {
         Blocks.FERN,
         Blocks.LARGE_FERN,
         Blocks.POTTED_FERN,
-        Blocks.SUGAR_CANE
+        Blocks.SUGAR_CANE,
+        Blocks.BUSH
     );
 
     private static final Set<Block> FOLIAGE_COLOR_BLOCKS = Set.of(
@@ -60,13 +61,28 @@ public final class BiomeColors {
         final BlockState data = chunk.getBlockState(pos);
         final Block block = data.getBlock();
 
+        if (this.world.config().MAP_TEXTURE_COLORS) {
+            // Meridian: the grey texture colour times the biome colour, like the game draws it
+            final TextureColors textures = TextureColors.get();
+            final TextureColors.@Nullable Tint tint = textures.tint(block);
+            final int texture = textures.color(block);
+            if (tint != null && texture != -1) {
+                return switch (tint) {
+                    case GRASS -> Colors.multiply(texture, this.grass(pos), this.world.config().MAP_TINT_BRIGHTNESS);
+                    case FOLIAGE -> Colors.multiply(texture, this.foliage(pos), this.world.config().MAP_TINT_BRIGHTNESS);
+                    // water keeps the plain biome water colour; its depth shading happens later
+                    case WATER -> this.world.config().MAP_WATER_GRADIENT ? this.water(pos) : Colors.mix(color, this.water(pos), 0.8F);
+                };
+            }
+        }
+
         if (GRASS_COLOR_BLOCKS.contains(block)) {
             color = this.grass(pos);
         } else if (FOLIAGE_COLOR_BLOCKS.contains(block)) {
             color = this.foliage(pos);
         } else if (block.defaultMapColor() == MapColor.WATER) {
             int modColor = this.water(pos);
-            color = Colors.mix(color, modColor, 0.8F);
+            color = this.world.config().MAP_WATER_GRADIENT ? modColor : Colors.mix(color, modColor, 0.8F);
         }
 
         return color;

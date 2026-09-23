@@ -61,6 +61,11 @@ record ChunkSnapshotImpl(
     }
 
     @Override
+    public boolean hasHeightmap(final Heightmap.Types type) {
+        return this.heightmaps.containsKey(type);
+    }
+
+    @Override
     public int getHeight(final Heightmap.Types type, final int x, final int z) {
         final HeightmapSnapshot heightmap = this.heightmaps.get(type);
         if (heightmap == null) {

@@ -28,6 +28,11 @@ public interface ChunkSnapshot extends LevelHeightAccessor, BiomeManager.NoiseBi
 
     int getHeight(Heightmap.Types type, int x, int z);
 
+    /** Meridian: whether this snapshot holds the given heightmap. */
+    default boolean hasHeightmap(final Heightmap.Types type) {
+        return false;
+    }
+
     DimensionType dimensionType();
 
     ChunkPos pos();
@@ -54,6 +59,10 @@ public interface ChunkSnapshot extends LevelHeightAccessor, BiomeManager.NoiseBi
             }
             heightmaps = new EnumMap<>(ChunkSnapshotImpl.EMPTY_HEIGHTMAPS);
             heightmaps.put(Heightmap.Types.WORLD_SURFACE, new HeightmapSnapshot(chunk, heightAccessor, Heightmap.Types.WORLD_SURFACE));
+            // Meridian: the ocean floor gives water depth in one lookup (used for depth shading and underwater relief)
+            if (chunk.hasPrimedHeightmap(Heightmap.Types.OCEAN_FLOOR)) {
+                heightmaps.put(Heightmap.Types.OCEAN_FLOOR, new HeightmapSnapshot(chunk, heightAccessor, Heightmap.Types.OCEAN_FLOOR));
+            }
 
             for (int i = 0; i < sectionCount; i++) {
                 final boolean sectionEmpty = sections[i].hasOnlyAir();
