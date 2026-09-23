@@ -8,6 +8,10 @@
 
 </div>
 
+<img width="743" height="496" alt="image" src="https://github.com/user-attachments/assets/c6ac50b3-36e8-48de-8eaf-0db552c91887" />
+<img width="739" height="492" alt="image" src="https://github.com/user-attachments/assets/ad6fd6d2-333d-4441-87f4-08126489c14c" />
+
+
 ## What is squaremap
 
 squaremap is a minimalistic and lightweight live world map viewer for Minecraft servers.
