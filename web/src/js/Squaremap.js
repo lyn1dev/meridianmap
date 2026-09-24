@@ -4,6 +4,7 @@ import { WorldList } from "./WorldList.js";
 import { UICoordinates } from "./UICoordinates.js";
 import { UILink } from "./UILink.js";
 import { LayerControl } from "./LayerControl.js";
+import { Shops } from "./Shops.js";
 import L from "leaflet";
 import "./addons/Ellipse.js";
 import "./addons/RotateMarker.js";
@@ -53,6 +54,9 @@ class SquaremapMap {
             })
             .on("dblclick", () => {
                 this.playerList.followPlayerMarker(null);
+            })
+            .on("layeradd layerremove", (e) => {
+                this.sidebar?.syncToggle(e.layer);
             });
 
         this.tick_count = 1;
@@ -85,6 +89,7 @@ class SquaremapMap {
                 this.title = json.ui.title;
                 this.sidebar = new Sidebar(json.ui.sidebar, this.getUrlParam("show_sidebar", "true") === "true");
                 this.playerList = new PlayerList(json.ui.sidebar);
+                this.shops = new Shops();
                 this.worldList = new WorldList(json.worlds);
                 this.coordinates = new UICoordinates(
                     json.ui.coordinates,
@@ -94,8 +99,7 @@ class SquaremapMap {
 
                 this.showControls = this.getUrlParam("show_controls", "true") === "true";
                 if (!this.showControls) {
-                    let controlLayers = document.getElementsByClassName("leaflet-top leaflet-left");
-                    controlLayers[0].style.display = "none";
+                    document.body.classList.add("no-controls");
                 }
 
                 this.worldList.loadInitialWorld(json, (world) => {

@@ -99,7 +99,7 @@ class World {
                     .setMaxZoom(this.zoom.max + this.zoom.extra);
 
                 // update page title
-                document.title = S.title.replace(/{world}/g, this.display_name);
+                document.title = this.type === "normal" ? "Meridian Earth Map" : `${this.display_name} · Meridian Earth Map`;
 
                 // setup background
                 document.getElementById("map").style.background = this.getBackground();
@@ -124,15 +124,8 @@ class World {
         );
     }
     getBackground() {
-        switch (this.type) {
-            case "nether":
-                return "url('images/nether_sky.png')";
-            case "the_end":
-                return "url('images/end_sky.png')";
-            case "normal":
-            default:
-                return "url('images/overworld_sky.png')";
-        }
+        // Meridian: plain black outside the map instead of the sky textures
+        return "#000";
     }
     markers(json) {
         // check if json is iterable

@@ -1,5 +1,9 @@
 import { Player } from "./util/Player.js";
 import { S } from "./Squaremap.js";
+import { plainText } from "./Sidebar.js";
+
+/** Meridian Earth is 133,632 x 55,680 blocks (1:300, 75 N to 75 S); other worlds get a smaller box around spawn. */
+const EARTH = { w: 133632, h: 55680 };
 
 class PlayerList {
     /** @type {Map<string, Player>} */
@@ -10,8 +14,6 @@ class PlayerList {
     following;
     /** @type {boolean} */
     firstTick;
-    /** @type {string} */
-    label;
     /** @type {PlayersData | null} */
     jsonCache;
 
@@ -24,17 +26,15 @@ class PlayerList {
         this.jsonCache = null;
         this.following = null;
         this.firstTick = true;
-        this.label = json.player_list_label;
         S.map.createPane("nameplate").style.zIndex = 1000;
     }
     tick() {
         const update = () => {
             this.updatePlayerList(this.jsonCache.players);
-            const title = `${this.label}`
-                .replace(/{cur}/g, this.jsonCache.players.length)
-                .replace(/{max}/g, this.jsonCache.max == null ? "???" : this.jsonCache.max);
-            if (S.sidebar.players.legend.innerHTML !== title) {
-                S.sidebar.players.legend.innerHTML = title;
+            const n = this.jsonCache.players.length;
+            const text = `${n} online`;
+            if (S.sidebar.players.legend.textContent !== text) {
+                S.sidebar.players.legend.textContent = text;
             }
         };
         const fetchPlayers = (callback) => {
@@ -50,27 +50,33 @@ class PlayerList {
         };
 
         if (S.tick_count % S.worldList.curWorld.player_tracker.update_interval === 0) {
-            if (S.staticMode) {
-                if (this.jsonCache === null) {
-                    fetchPlayers(() => update());
-                } else {
-                    update();
-                }
+            if (S.staticMode && this.jsonCache !== null) {
+                update();
             } else {
                 fetchPlayers(() => update());
             }
         }
     }
     /**
+     * Zoom in close on a visible player, or somewhere random for a hidden one (their position is never sent).
      * @param {string} uuid
      */
     showPlayer(uuid) {
         const player = this.players.get(uuid);
+        if (player == null) return false;
+        const world = S.worldList.curWorld;
+        if (player.hidden) {
+            const earth = world.type === "normal";
+            const x = earth ? Math.random() * EARTH.w : (Math.random() - 0.5) * 20000;
+            const z = earth ? Math.random() * EARTH.h : (Math.random() - 0.5) * 20000;
+            S.map.setView(S.toLatLng(x, z), Math.max(0, world.zoom.max - 1));
+            return false;
+        }
         if (!S.worldList.worlds.has(player.world)) {
             return false;
         }
         S.worldList.showWorld(player.world, () => {
-            S.map.panTo(S.toLatLng(player.x, player.z));
+            S.map.setView(S.toLatLng(player.x, player.z), S.worldList.curWorld.zoom.max);
         });
         return true;
     }
@@ -78,38 +84,64 @@ class PlayerList {
      * @param {Player} player
      */
     addToList(player) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "prow";
+        row.id = player.uuid;
+
         const head = document.createElement("img");
-        head.classList.add("head");
+        head.className = "head";
+        head.alt = "";
+        head.width = 16;
+        head.height = 16;
         head.src = player.getHeadUrl();
 
-        const span = document.createElement("span");
-        span.innerHTML = player.displayName;
+        const name = document.createElement("span");
+        name.className = "pname";
+        name.innerHTML = player.displayName;
 
-        const link = S.createElement("a", player.uuid, this);
-        link.onclick = function (e) {
-            if (this.parent.showPlayer(this.id)) {
-                this.parent.followPlayerMarker(this.id);
-                e.stopPropagation();
+        const state = document.createElement("span");
+        state.className = "pstate";
+        state.textContent = "Off map";
+
+        row.append(head, name, state);
+        row.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (this.showPlayer(player.uuid)) {
+                this.followPlayerMarker(player.uuid);
+            } else {
+                this.followPlayerMarker(null);
             }
-        };
-        link.appendChild(head);
-        link.appendChild(span);
-        const fieldset = S.sidebar.players.element;
-        fieldset.appendChild(link);
-        Array.from(fieldset.getElementsByTagName("a"))
+        });
+        this.setRowState(row, player);
+        S.sidebar.players.element.appendChild(row);
+        this.sortList();
+    }
+    /**
+     * @param {HTMLElement} row
+     * @param {Player} player
+     */
+    setRowState(row, player) {
+        row.classList.toggle("is-hidden", player.hidden);
+        row.title = player.hidden ? "Hidden from the map (indoors, underground or invisible)" : "Zoom to this player";
+        row.dataset.name = `${player.name} ${plainText(player.displayName)}`.toLowerCase();
+    }
+    sortList() {
+        const list = S.sidebar.players.element;
+        Array.from(list.children)
             .sort((a, b) => {
-                return plain(a.getElementsByTagName("span")[0]).localeCompare(plain(b.getElementsByTagName("span")[0]));
+                const ha = a.classList.contains("is-hidden"), hb = b.classList.contains("is-hidden");
+                if (ha !== hb) return ha ? 1 : -1;
+                return a.querySelector(".pname").textContent.localeCompare(b.querySelector(".pname").textContent);
             })
-            .forEach((link) => fieldset.appendChild(link));
+            .forEach((row) => list.appendChild(row));
+        S.sidebar.filterPlayers();
     }
     /**
      * @param {Player} player
      */
     removeFromList(player) {
-        const link = document.getElementById(player.uuid);
-        if (link != null) {
-            link.remove();
-        }
+        document.getElementById(player.uuid)?.remove();
         this.players.delete(player.uuid);
         player.removeMarker();
     }
@@ -118,64 +150,54 @@ class PlayerList {
      */
     updatePlayerList(players) {
         const playersToRemove = Array.from(this.players.keys());
-
         let needsSort = false;
 
-        // update players from json
         for (let i = 0; i < players.length; i++) {
             let player = this.players.get(players[i].uuid);
             if (player == null) {
-                // new player
                 player = new Player(players[i]);
                 this.players.set(player.uuid, player);
                 this.addToList(player);
-            } else {
-                const oldDisplayName = player.displayName;
                 player.update(players[i]);
-                if (oldDisplayName !== player.displayName) {
+            } else {
+                const oldName = player.displayName;
+                const oldHidden = player.hidden;
+                player.update(players[i]);
+                if (oldName !== player.displayName || oldHidden !== player.hidden) {
+                    const row = document.getElementById(player.uuid);
+                    row.querySelector(".pname").innerHTML = player.displayName;
+                    this.setRowState(row, player);
                     needsSort = true;
-                    document.getElementById(player.uuid).getElementsByTagName("span")[0].innerHTML = player.displayName;
                 }
             }
             playersToRemove.remove(players[i].uuid);
         }
 
-        // remove players not in json
         for (let i = 0; i < playersToRemove.length; i++) {
-            const player = this.players.get(playersToRemove[i]);
-            this.removeFromList(player);
+            this.removeFromList(this.players.get(playersToRemove[i]));
+            needsSort = true;
         }
-
         if (needsSort) {
-            const fieldset = S.sidebar.players.element;
-            Array.from(fieldset.getElementsByTagName("a"))
-                .sort((a, b) => {
-                    return plain(a.getElementsByTagName("span")[0]).localeCompare(
-                        plain(b.getElementsByTagName("span")[0]),
-                    );
-                })
-                .forEach((link) => fieldset.appendChild(link));
+            this.sortList();
         }
+        S.sidebar.filterPlayers();
 
-        // first tick only
         if (this.firstTick) {
             this.firstTick = false;
-
-            // follow uuid from url
             const follow = S.getUrlParam("uuid", null);
-            if (follow != null && this.players.get(follow) != null) {
+            if (follow != null && this.players.get(follow) != null && !this.players.get(follow).hidden) {
                 this.followPlayerMarker(follow);
             }
         }
 
-        // follow highlighted player
+        // follow the highlighted player; stop if they drop off the map
         if (this.following != null) {
             const player = this.players.get(this.following);
-            if (player != null && S.worldList.curWorld != null) {
+            if (player == null || player.hidden) {
+                this.followPlayerMarker(null);
+            } else if (S.worldList.curWorld != null) {
                 if (player.world !== S.worldList.curWorld.name) {
-                    S.worldList.showWorld(player.world, () => {
-                        S.map.panTo(S.toLatLng(player.x, player.z));
-                    });
+                    S.worldList.showWorld(player.world, () => S.map.panTo(S.toLatLng(player.x, player.z)));
                 } else {
                     S.map.panTo(S.toLatLng(player.x, player.z));
                 }
@@ -183,33 +205,23 @@ class PlayerList {
         }
     }
     clearPlayerMarkers() {
-        const playersToRemove = Array.from(this.players.keys());
-        for (let i = 0; i < playersToRemove.length; i++) {
-            const player = this.players.get(playersToRemove[i]);
+        for (const player of this.players.values()) {
             player.removeMarker();
         }
         this.markers.clear();
-        // S.layerControl.playersLayer.clearLayers();
     }
     /**
-     * @param {string} uuid
+     * @param {string | null} uuid
      */
     followPlayerMarker(uuid) {
         if (this.following !== null && this.following !== uuid) {
-            document.getElementById(this.following).classList.remove("following");
+            document.getElementById(this.following)?.classList.remove("following");
         }
         this.following = uuid;
         if (this.following != null) {
-            document.getElementById(this.following).classList.add("following");
+            document.getElementById(this.following)?.classList.add("following");
         }
     }
-}
-
-/**
- * @param {HTMLElement} element
- */
-function plain(element) {
-    return element.textContent || element.innerText || "";
 }
 
 export { PlayerList };

@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import net.kyori.adventure.text.flattener.ComponentFlattener;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -16,6 +19,8 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -77,16 +82,29 @@ public final class UpdatePlayers implements Runnable {
             final WorldConfig worldConfig = this.configManager.worldConfig(world);
 
             world.players().forEach(player -> {
+                // left out entirely (vanished staff, spectators, NPCs): not even their name is published
                 if (worldConfig.PLAYER_TRACKER_HIDE_SPECTATORS && player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) {
                     return;
                 }
-                if (worldConfig.PLAYER_TRACKER_HIDE_INVISIBLE && player.isInvisible()) {
+                if (this.playerManager.otherwiseHidden(player)) {
                     return;
                 }
-                if (worldConfig.PLAYER_TRACKER_HIDE_MAP_INVISIBILITY_EQUIPMENT && hasMapInvisibilityItemEquipped(player)) {
-                    return;
-                }
-                if (this.playerManager.hidden(player) || this.playerManager.otherwiseHidden(player)) {
+                // Meridian: hidden from the map (invisible, under a roof, /map hide) but still listed, with no position
+                final boolean hidden = (worldConfig.PLAYER_TRACKER_HIDE_INVISIBLE && player.isInvisible())
+                    || (worldConfig.PLAYER_TRACKER_HIDE_MAP_INVISIBILITY_EQUIPMENT && hasMapInvisibilityItemEquipped(player))
+                    || (worldConfig.PLAYER_TRACKER_HIDE_UNDER_ROOF && underRoof(world, player))
+                    || this.playerManager.hidden(player);
+                if (hidden) {
+                    if (worldConfig.PLAYER_TRACKER_LIST_HIDDEN) {
+                        final Map<String, Object> entry = new HashMap<>();
+                        entry.put("name", player.getGameProfile().name());
+                        if (worldConfig.PLAYER_TRACKER_USE_DISPLAY_NAME) {
+                            entry.put("display_name", htmlComponentSerializer.serialize(this.playerManager.displayName(player)));
+                        }
+                        entry.put("uuid", player.getUUID().toString().replace("-", ""));
+                        entry.put("hidden", true);
+                        players.add(entry);
+                    }
                     return;
                 }
                 final Map<String, Object> playerEntry = new HashMap<>();
@@ -119,6 +137,27 @@ public final class UpdatePlayers implements Runnable {
         map.put("max", this.serverAccess.maxPlayers());
 
         return map;
+    }
+
+    /**
+     * Meridian: is there a solid block anywhere above the player's head? Leaves, water and plants don't count, so
+     * standing under a tree or swimming keeps you on the map; a roof, a cave or an overhang hides you.
+     */
+    private static boolean underRoof(final ServerLevel level, final ServerPlayer player) {
+        final BlockPos head = BlockPos.containing(player.getEyePosition());
+        final int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, head.getX(), head.getZ());
+        final BlockPos.MutableBlockPos pos = head.mutable();
+        for (int y = head.getY() + 1; y < top; y++) {
+            pos.setY(y);
+            final BlockState state = level.getBlockState(pos);
+            if (state.isAir() || state.is(BlockTags.LEAVES)) {
+                continue;
+            }
+            if (state.blocksMotion()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int armorPoints(final ServerPlayer player) {

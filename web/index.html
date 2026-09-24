@@ -1,31 +1,92 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <title></title>
         <meta charset="UTF-8" />
-        <meta name="description" content="Blazing fast live mapping solution for Minecraft servers" />
-        <meta property="og:url" content="https://github.com/jpenilla/squaremap" />
+        <title>Meridian Earth Map</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover" />
+        <meta name="description" content="Live map of Meridian Earth, the 1:300 Minecraft map of the real world. Find towns, players and chest shops." />
+        <link rel="canonical" href="https://map.meridianmc.xyz/" />
+        <meta name="theme-color" content="#111315" />
+        <meta property="og:site_name" content="Meridian" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="squaremap" />
-        <meta property="og:description" content="Blazing fast live mapping solution for Minecraft servers" />
-        <!--<meta property="og:image" content="https://github.com/pl3xgaming/Pl3xMap/raw/master/plugin/src/main/resources/web/images/og.png">-->
+        <meta property="og:url" content="https://map.meridianmc.xyz/" />
+        <meta property="og:title" content="Meridian Earth Map" />
+        <meta property="og:description" content="Live map of Meridian Earth, the 1:300 Minecraft map of the real world. Find towns, players and chest shops." />
+        <meta property="og:image" content="https://map.meridianmc.xyz/images/og.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta property="twitter:domain" content="github.com/jpenilla/squaremap" />
-        <meta property="twitter:url" content="https://github.com/jpenilla/squaremap" />
-        <meta name="twitter:title" content="squaremap" />
-        <meta name="twitter:description" content="Blazing fast live mapping solution for Minecraft servers" />
-        <!--<meta name="twitter:image" content="https://github.com/pl3xgaming/Pl3xMap/raw/master/plugin/src/main/resources/web/images/og.png">-->
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+        <meta name="twitter:title" content="Meridian Earth Map" />
+        <meta name="twitter:description" content="Live map of Meridian Earth, the 1:300 Minecraft map of the real world. Find towns, players and chest shops." />
+        <meta name="twitter:image" content="https://map.meridianmc.xyz/images/og.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="theme-color" content="#222222" />
-        <meta name="keywords" content="minecraft, map, dynamic, squaremap" />
-        <meta name="description" content="Minecraft Dynamic Map" />
-        <link rel="shortcut icon" href="favicon.ico" sizes="256x256" crossorigin="anonymous" />
+        <link rel="icon" href="images/favicon.png" sizes="64x64" type="image/png" />
+        <link rel="apple-touch-icon" href="images/logo.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        />
         <script type="module" src="src/js/Squaremap.js"></script>
     </head>
     <body>
+        <header id="topbar">
+            <a class="brand" href="https://meridianmc.xyz/" aria-label="Meridian home">
+                <img src="images/logo.png" alt="" width="30" height="30" />
+                <span class="wordmark">Meridian</span>
+                <span class="sub">Earth Map</span>
+            </a>
+            <nav class="links" aria-label="Meridian sites">
+                <a href="https://meridianmc.xyz/wiki/">Wiki</a>
+                <a href="https://stats.meridianmc.xyz/">Stats</a>
+            </nav>
+        </header>
+
         <div id="map"></div>
+
+        <aside id="msidebar" aria-label="Map panel">
+            <button id="msidebar-toggle" type="button" aria-controls="msidebar" aria-expanded="true" aria-label="Hide panel">
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+            </button>
+            <div class="scroll">
+                <section class="cat" id="cat-toggles" data-open="true">
+                    <button class="cat-h" type="button" aria-expanded="true">
+                        <span class="cat-t">Toggles</span>
+                        <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+                    </button>
+                    <div class="cat-b">
+                        <div id="world-list" class="worlds" role="group" aria-label="World"></div>
+                        <div id="toggle-list" class="toggles"></div>
+                    </div>
+                </section>
+
+                <section class="cat" id="cat-players" data-open="false">
+                    <button class="cat-h" type="button" aria-expanded="false">
+                        <span class="cat-t">Players</span>
+                        <span id="player-count" class="chip">0 online</span>
+                        <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+                    </button>
+                    <div class="cat-b" hidden>
+                        <input id="player-search" class="search" type="search" placeholder="Find a player" autocomplete="off" spellcheck="false" aria-label="Find a player" />
+                        <div id="player-list" class="plist"></div>
+                        <p id="player-empty" class="empty">Nobody is online right now.</p>
+                    </div>
+                </section>
+
+                <section class="cat" id="cat-shops" data-open="false">
+                    <button class="cat-h" type="button" aria-expanded="false">
+                        <span class="cat-t">Shops</span>
+                        <span id="shop-count" class="chip">0</span>
+                        <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+                    </button>
+                    <div class="cat-b" hidden>
+                        <input id="shop-search" class="search" type="search" placeholder="Search an item, e.g. diamond" autocomplete="off" spellcheck="false" aria-label="Search shops by item" />
+                        <p id="shop-meta" class="meta"></p>
+                        <div id="shop-list" class="slist"></div>
+                    </div>
+                </section>
+            </div>
+        </aside>
     </body>
 </html>

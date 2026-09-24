@@ -39,7 +39,18 @@ public final class PaperPlayerManager extends AbstractPlayerManager {
 
     @Override
     public boolean otherwiseHidden(final ServerPlayer player) {
-        return player.getBukkitEntity().hasMetadata("NPC");
+        final org.bukkit.entity.Player bukkit = player.getBukkitEntity();
+        return bukkit.hasMetadata("NPC") || vanished(bukkit);
+    }
+
+    /** Meridian: the "vanished" metadata vanish plugins set (SuperVanish, PremiumVanish, EssentialsX, Staff++ and others). */
+    private static boolean vanished(final org.bukkit.entity.Player player) {
+        for (final org.bukkit.metadata.MetadataValue value : player.getMetadata("vanished")) {
+            if (value.asBoolean()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

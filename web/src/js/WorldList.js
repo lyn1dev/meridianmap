@@ -22,9 +22,11 @@ class WorldList {
         // sort worlds by order
         this.worlds = new Map([...unorderedMap].sort((a, b) => a[1].order - b[1].order));
 
-        // set up world list link elements
-        for (const [name, world] of this.worlds) {
-            const link = S.createElement("a", name, this);
+        // set up world list link elements (Meridian: only when there is more than one world to switch between)
+        for (const [name, world] of this.worlds.size > 1 ? this.worlds : []) {
+            const link = S.createElement("button", `world-${name}`, this);
+            link.type = "button";
+            link.className = "wbtn";
             link.onclick = function () {
                 const curWorld = this.parent.curWorld;
                 if (curWorld.name === name) {
@@ -37,10 +39,6 @@ class WorldList {
                 });
             };
 
-            const img = document.createElement("img");
-            img.src = this.getIcon(world);
-
-            link.appendChild(img);
             link.appendChild(S.createTextElement("span", world.display_name));
 
             S.sidebar.worlds.element.appendChild(link);
@@ -101,6 +99,9 @@ class WorldList {
         // load new world
         const world = this.worlds.get(name);
         this.curWorld = world;
+        for (const button of S.sidebar.worlds.element.children) {
+            button.setAttribute("aria-pressed", String(button.id === `world-${name}`));
+        }
         world.load(callback);
     }
     /**

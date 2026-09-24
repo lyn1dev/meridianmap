@@ -22,6 +22,8 @@ class Player {
     tooltip;
     /** @type {L.Marker} */
     marker;
+    /** Meridian: hidden from the map (indoors, underground, invisible); listed without a position @type {boolean} */
+    hidden;
 
     /**
      * @param {PlayerData} json
@@ -31,8 +33,9 @@ class Player {
         this.uuid = json.uuid;
         this.world = json.world;
         this.displayName = json.display_name !== undefined ? json.display_name : json.name;
-        this.x = 0;
-        this.z = 0;
+        this.hidden = json.hidden === true;
+        this.x = json.x ?? 0;
+        this.z = json.z ?? 0;
         this.armor = 0;
         this.health = 20;
         this.tooltip = L.tooltip({
@@ -42,14 +45,14 @@ class Player {
             pane: "nameplate",
             content: this.makeNameplateContent(json),
         });
-        this.marker = L.marker(S.toLatLng(json.x, json.z), {
+        this.marker = L.marker(S.toLatLng(this.x, this.z), {
             icon: L.icon({
                 iconUrl: "images/icon/player.png",
                 iconSize: [17, 16],
                 iconAnchor: [8, 9],
                 tooltipAnchor: [0, 0],
             }),
-            rotationAngle: 180 + json.yaw,
+            rotationAngle: 180 + (json.yaw ?? 0),
         });
         if (S.worldList.curWorld.player_tracker.nameplates.enabled) {
             this.updateNameplate(json);
@@ -174,15 +177,20 @@ class Player {
      * @param {PlayerData} player
      */
     update(player) {
+        this.hidden = player.hidden === true;
+        this.displayName = player.display_name !== undefined ? player.display_name : player.name;
+        const row = document.getElementById(player.uuid);
+        if (this.hidden) {
+            // no position is published for hidden players: take the marker off the map and stop there
+            this.removeMarker();
+            row?.classList.remove("other-world");
+            return;
+        }
         this.x = player.x;
         this.z = player.z;
         this.world = player.world;
         this.armor = player.armor;
         this.health = player.health;
-        this.displayName = player.display_name !== undefined ? player.display_name : player.name;
-        const link = document.getElementById(player.uuid);
-        const img = link.getElementsByTagName("img")[0];
-        const span = link.getElementsByTagName("span")[0];
         if (S.worldList.curWorld.name == player.world) {
             if (S.worldList.curWorld.player_tracker.enabled) {
                 this.addMarker();
@@ -195,12 +203,10 @@ class Player {
             if (this.marker.options.rotationAngle != angle) {
                 this.marker.setRotationAngle(angle);
             }
-            img.classList.remove("other-world");
-            span.classList.remove("other-world");
+            row?.classList.remove("other-world");
         } else {
             this.removeMarker();
-            img.classList.add("other-world");
-            span.classList.add("other-world");
+            row?.classList.add("other-world");
         }
         this.updateNameplate(player);
     }

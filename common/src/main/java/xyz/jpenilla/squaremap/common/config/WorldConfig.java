@@ -148,6 +148,9 @@ public final class WorldConfig extends AbstractWorldConfig<Config> {
     public boolean PLAYER_TRACKER_HIDE_INVISIBLE = true;
     public boolean PLAYER_TRACKER_HIDE_SPECTATORS = true;
     public boolean PLAYER_TRACKER_HIDE_MAP_INVISIBILITY_EQUIPMENT = true;
+    // Meridian: players with a solid block above their head drop off the map; hidden players stay in the list, greyed
+    public boolean PLAYER_TRACKER_HIDE_UNDER_ROOF = true;
+    public boolean PLAYER_TRACKER_LIST_HIDDEN = true;
     public boolean PLAYER_TRACKER_USE_DISPLAY_NAME = false;
 
     private void playerTrackerSettings() {
@@ -165,6 +168,8 @@ public final class WorldConfig extends AbstractWorldConfig<Config> {
         this.PLAYER_TRACKER_HIDE_INVISIBLE = this.getBoolean("player-tracker.hide.invisible", this.PLAYER_TRACKER_HIDE_INVISIBLE);
         this.PLAYER_TRACKER_HIDE_SPECTATORS = this.getBoolean("player-tracker.hide.spectators", this.PLAYER_TRACKER_HIDE_SPECTATORS);
         this.PLAYER_TRACKER_HIDE_MAP_INVISIBILITY_EQUIPMENT = this.getBoolean("player-tracker.hide.map-invisibility-equipment", this.PLAYER_TRACKER_HIDE_MAP_INVISIBILITY_EQUIPMENT);
+        this.PLAYER_TRACKER_HIDE_UNDER_ROOF = this.getBoolean("player-tracker.hide.under-roof", this.PLAYER_TRACKER_HIDE_UNDER_ROOF);
+        this.PLAYER_TRACKER_LIST_HIDDEN = this.getBoolean("player-tracker.hide.list-hidden-players", this.PLAYER_TRACKER_LIST_HIDDEN);
         this.PLAYER_TRACKER_USE_DISPLAY_NAME = this.getBoolean("player-tracker.use-display-names", this.PLAYER_TRACKER_USE_DISPLAY_NAME);
     }
 

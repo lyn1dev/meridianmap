@@ -40,6 +40,8 @@ class LayerControl {
                 },
             )
             .addTo(S.map);
+        // Meridian: the switches live in the side panel; Leaflet's own box stays as the registry only
+        this.controls.getContainer().style.display = "none";
     }
     /**
      * @param name {string}
@@ -51,6 +53,7 @@ class LayerControl {
         if (this.shouldHide(layer, hide) !== true) {
             layer.addTo(S.map);
         }
+        S.sidebar?.renderToggles();
     }
     /**
      * @param layer {L.Layer}
@@ -60,6 +63,7 @@ class LayerControl {
         this.controls.removeLayer(layer);
         layer.remove();
         this.ignoreLayer = null;
+        S.sidebar?.renderToggles();
     }
     /**
      * @param layer {L.Layer}
@@ -110,6 +114,9 @@ class LayerControl {
         }
         this.playersLayer.order = world.player_tracker.priority;
         this.playersLayer.setZIndex(world.player_tracker.z_index);
+
+        // Meridian: chest shops as a switchable layer
+        S.shops?.attach();
     }
     /**
      * @param world {World}

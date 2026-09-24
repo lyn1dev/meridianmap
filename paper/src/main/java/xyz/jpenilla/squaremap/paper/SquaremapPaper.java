@@ -16,11 +16,13 @@ import org.checkerframework.framework.qual.DefaultQualifier;
 import xyz.jpenilla.squaremap.api.Squaremap;
 import xyz.jpenilla.squaremap.common.SquaremapCommon;
 import xyz.jpenilla.squaremap.common.SquaremapPlatform;
+import xyz.jpenilla.squaremap.common.data.DirectoryProvider;
 import xyz.jpenilla.squaremap.common.task.UpdatePlayers;
 import xyz.jpenilla.squaremap.common.task.UpdateWorldData;
 import xyz.jpenilla.squaremap.paper.folia.FoliaInitListener;
 import xyz.jpenilla.squaremap.paper.listener.MapUpdateListeners;
 import xyz.jpenilla.squaremap.paper.listener.WorldLoadListener;
+import xyz.jpenilla.squaremap.paper.meridian.ShopExport;
 import xyz.jpenilla.squaremap.paper.network.PaperNetworking;
 import xyz.jpenilla.squaremap.paper.util.Folia;
 
@@ -35,6 +37,7 @@ public final class SquaremapPaper implements SquaremapPlatform {
     private @MonotonicNonNull Squaremap api;
     private @Nullable ScheduledTask updateWorldData;
     private @Nullable ScheduledTask updatePlayers;
+    private @Nullable ScheduledTask shopExport;
     private @Nullable MapUpdateListeners mapUpdateListeners;
     private @Nullable WorldLoadListener worldLoadListener;
 
@@ -96,6 +99,14 @@ public final class SquaremapPaper implements SquaremapPlatform {
             1,
             5 * 20
         );
+        // Meridian: chest shops for the map's shop search, once a minute
+        final ShopExport shops = new ShopExport(this.injector.getInstance(DirectoryProvider.class).webDirectory());
+        this.shopExport = this.server.getGlobalRegionScheduler().runAtFixedRate(
+            this.plugin,
+            $ -> shops.run(),
+            20 * 20,
+            60 * 20
+        );
     }
 
     @Override
@@ -108,6 +119,11 @@ public final class SquaremapPaper implements SquaremapPlatform {
         if (this.updatePlayers != null) {
             this.updatePlayers.cancel();
             this.updatePlayers = null;
+        }
+
+        if (this.shopExport != null) {
+            this.shopExport.cancel();
+            this.shopExport = null;
         }
 
         if (this.mapUpdateListeners != null) {
