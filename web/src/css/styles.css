@@ -252,18 +252,14 @@ div.leaflet-nameplate-pane > div {
 div.leaflet-nameplate-pane div:before {
     border-color: transparent;
 }
-/* Meridian: a floating name above the player's dot, no box */
+/* Meridian: just the name in a dark box, above the player's arrow */
 div.leaflet-nameplate-pane > div.name-tag {
-    padding: 0;
-    background: none;
-    border: 0;
+    padding: 3px 6px;
+    background: rgba(17, 19, 21, 0.8);
+    border: 1px solid var(--line);
     box-shadow: none;
-    font: 600 12px/1 var(--sans);
+    font: 600 12px/1.2 var(--sans);
     color: #ffffff;
-    text-shadow:
-        0 0 2px #000,
-        0 0 2px #000,
-        1px 1px 0 #000;
     white-space: nowrap;
 }
 div.leaflet-nameplate-pane > div.name-tag:before {
@@ -287,31 +283,7 @@ div.leaflet-marker-pane img {
     transition: all 0.25s;
 }
 
-/* player markers: a small dot with a tick pointing where the player faces */
-.pdot {
-    background: none;
-    border: 0;
-}
-.pdot i {
-    position: absolute;
-    left: 2px;
-    top: 2px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #ffffff;
-    box-shadow: 0 0 0 1.5px #111315;
-}
-.pdot::before {
-    content: "";
-    position: absolute;
-    left: 4px;
-    top: -3px;
-    border-left: 2px solid transparent;
-    border-right: 2px solid transparent;
-    border-bottom: 4px solid #ffffff;
-}
-/* zoomed out: no nameplates (hover a dot for the name) */
+/* zoomed out: no nameplates (hover a player for the name) */
 .m-far .leaflet-nameplate-pane {
     display: none;
 }
