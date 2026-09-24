@@ -38,20 +38,25 @@ class Player {
         this.z = json.z ?? 0;
         this.armor = 0;
         this.health = 20;
+        // Meridian: just the name, floating above the dot
         this.tooltip = L.tooltip({
             permanent: true,
-            direction: "right",
-            offset: [10, 0],
+            direction: "top",
+            offset: [0, -2],
+            className: "name-tag",
             pane: "nameplate",
             content: this.makeNameplateContent(json),
         });
         this.marker = L.marker(S.toLatLng(this.x, this.z), {
-            icon: L.icon({
-                iconUrl: "images/icon/player.png",
-                iconSize: [17, 16],
-                iconAnchor: [8, 9],
-                tooltipAnchor: [0, 0],
+            // Meridian: a small dot with a heading tick, so a few hundred players don't bury the map
+            icon: L.divIcon({
+                className: "pdot",
+                html: "<i></i>",
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+                tooltipAnchor: [0, -9],
             }),
+            title: json.name,
             rotationAngle: 180 + (json.yaw ?? 0),
         });
         if (S.worldList.curWorld.player_tracker.nameplates.enabled) {

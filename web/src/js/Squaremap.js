@@ -54,7 +54,8 @@ class SquaremapMap {
             })
             .on("layeradd layerremove", (e) => {
                 this.sidebar?.syncToggle(e.layer);
-            });
+            })
+            .on("zoomend", () => this.updateDetail());
 
         this.tick_count = 1;
 
@@ -108,6 +109,12 @@ class SquaremapMap {
                 });
             },
         );
+    }
+    /** Meridian: player nameplates only when zoomed right in (1 pixel = 1 block or closer); dots and a hover name further out. */
+    updateDetail() {
+        const world = this.worldList?.curWorld;
+        if (world?.zoom == null) return;
+        this.map.getContainer().classList.toggle("m-far", this.map.getZoom() < world.zoom.max);
     }
     centerOn(x, z, zoom) {
         this.map.setView(this.toLatLng(x, z), zoom);

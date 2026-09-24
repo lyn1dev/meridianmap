@@ -106,6 +106,7 @@ class World {
 
                 // setup tile layers
                 S.layerControl.setupTileLayers(this);
+                S.updateDetail();
 
                 // force clear player markers
                 S.playerList.clearPlayerMarkers();
