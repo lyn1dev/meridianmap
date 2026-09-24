@@ -2,8 +2,8 @@ import { Player } from "./util/Player.js";
 import { S } from "./Squaremap.js";
 import { plainText } from "./Sidebar.js";
 
-/** Meridian Earth is 133,632 x 55,680 blocks (1:300, 75 N to 75 S); other worlds get a smaller box around spawn. */
-const EARTH = { w: 133632, h: 55680 };
+/** Meridian Earth is 133,632 x 55,296 blocks (1:300, 75 N to about 74 S); other worlds get a smaller box around spawn. */
+const EARTH = { w: 133632, h: 55296 };
 
 class PlayerList {
     /** @type {Map<string, Player>} */
@@ -105,13 +105,11 @@ class PlayerList {
         state.textContent = "Off map";
 
         row.append(head, name, state);
+        // Meridian: jump to the player once and leave the map alone (no following, nothing stays selected)
         row.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (this.showPlayer(player.uuid)) {
-                this.followPlayerMarker(player.uuid);
-            } else {
-                this.followPlayerMarker(null);
-            }
+            this.followPlayerMarker(null);
+            this.showPlayer(player.uuid);
         });
         this.setRowState(row, player);
         S.sidebar.players.element.appendChild(row);
@@ -123,7 +121,7 @@ class PlayerList {
      */
     setRowState(row, player) {
         row.classList.toggle("is-hidden", player.hidden);
-        row.title = player.hidden ? "Hidden from the map (indoors, underground or invisible)" : "Zoom to this player";
+        row.title = player.hidden ? "Hidden from the map (indoors, underground or invisible)" : "Show this player on the map";
         row.dataset.name = `${player.name} ${plainText(player.displayName)}`.toLowerCase();
     }
     sortList() {
@@ -184,9 +182,10 @@ class PlayerList {
 
         if (this.firstTick) {
             this.firstTick = false;
-            const follow = S.getUrlParam("uuid", null);
-            if (follow != null && this.players.get(follow) != null && !this.players.get(follow).hidden) {
-                this.followPlayerMarker(follow);
+            // a ?uuid= link opens the map on that player once
+            const target = S.getUrlParam("uuid", null);
+            if (target != null && this.players.get(target) != null && !this.players.get(target).hidden) {
+                this.showPlayer(target);
             }
         }
 
