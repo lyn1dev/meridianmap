@@ -229,6 +229,47 @@ body.no-controls .leaflet-control-zoom {
     color: var(--accent);
 }
 
+/* right-click popup: copy coordinates */
+.coord-pop {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 170px;
+}
+.coord-pop .cp-xz {
+    font: 500 13px/1.4 var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    white-space: pre;
+}
+.coord-pop .cp-ll {
+    font: 500 12px/1.4 var(--mono);
+    color: var(--accent);
+    white-space: pre;
+}
+.coord-pop .cp-copy {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--accent);
+    border: 0;
+    color: var(--on-accent);
+    font: 500 11px/1 var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+.coord-pop .cp-copy:hover {
+    background: #ffd552;
+}
+.coord-pop .cp-field {
+    margin-top: 8px;
+    padding: 7px 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    font: 12px var(--mono);
+}
+
 /* player nameplates on the map */
 .nameplate-container {
     display: flex;

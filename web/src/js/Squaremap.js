@@ -208,6 +208,9 @@ class SquaremapMap {
 
 export const S = new SquaremapMap();
 
+// Meridian: right-click does nothing on the site except the map's copy-coordinates popup
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+
 // https://stackoverflow.com/a/3955096
 Array.prototype.remove = function () {
     var what,
