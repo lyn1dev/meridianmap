@@ -1,4 +1,5 @@
 import { S } from "./Squaremap.js";
+import { store } from "./Sidebar.js";
 import L from "leaflet";
 
 /** Meridian Earth projection: 1:300 equirectangular, 371.2 blocks per degree, block z 0 at 75 N and x 0 at 180 W. */
@@ -62,8 +63,44 @@ class UICoordinates {
         S.map.on("contextmenu", (event) => {
             if (S.worldList.curWorld != null) {
                 this.openCopyPopup(event.latlng);
+                this.dismissHint();
             }
         });
+        this.addHint();
+    }
+
+    /** First visit only: a small note above the coordinates about right-click copying. */
+    addHint() {
+        if (store.get("hint.copy", "") === "seen") return;
+        const touch = window.matchMedia("(pointer: coarse)").matches;
+        const Hint = L.Control.extend({
+            options: { position: "bottomleft" },
+            onAdd: () => {
+                const box = L.DomUtil.create("div", "m-hint");
+                box.setAttribute("role", "status");
+                const text = L.DomUtil.create("span", "", box);
+                text.textContent = touch
+                    ? "Press and hold anywhere on the map to copy its coordinates."
+                    : "Right-click anywhere on the map to copy its coordinates.";
+                const close = L.DomUtil.create("button", "m-hint-x", box);
+                close.type = "button";
+                close.setAttribute("aria-label", "Dismiss");
+                close.textContent = "×";
+                close.addEventListener("click", () => this.dismissHint());
+                L.DomEvent.disableClickPropagation(box);
+                return box;
+            },
+        });
+        this.hint = new Hint();
+        S.map.addControl(this.hint);
+    }
+
+    dismissHint() {
+        store.set("hint.copy", "seen");
+        if (this.hint != null) {
+            this.hint.remove();
+            this.hint = null;
+        }
     }
 
     /** A small popup at the clicked spot: its coordinates and a button that copies "Coordinates: X, Z". */

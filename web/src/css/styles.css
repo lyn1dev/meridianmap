@@ -149,12 +149,37 @@ body.no-controls .leaflet-control-zoom {
     color: var(--leader);
 }
 
-/* coordinates + copy link, bottom left */
+/* coordinates (and the first-visit hint above them), bottom left */
 .leaflet-bottom.leaflet-left {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
     padding: 0 0 10px 10px;
+}
+.m-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 270px;
+    padding: 9px 8px 9px 12px;
+    background: rgba(17, 19, 21, 0.94);
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--accent);
+    font: 13px/1.4 var(--sans);
+    color: var(--body);
+}
+.m-hint-x {
+    flex: none;
+    padding: 0 4px;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font: 500 17px/1 var(--mono);
+    cursor: pointer;
+}
+.m-hint-x:hover {
+    color: var(--accent);
 }
 .leaflet-bottom.leaflet-left .leaflet-control {
     margin: 0;
