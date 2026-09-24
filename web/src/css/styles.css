@@ -181,21 +181,6 @@ body.no-controls .leaflet-control-zoom {
 .m-coords .ll:empty {
     display: none;
 }
-.m-link {
-    padding: 8px 10px;
-    background: rgba(17, 19, 21, 0.9);
-    border: 1px solid var(--line);
-    font: 500 11px/1.35 var(--mono);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--body);
-    cursor: pointer;
-}
-.m-link:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
 /* tooltips and popups */
 .leaflet-tooltip {
     background: rgba(17, 19, 21, 0.92);

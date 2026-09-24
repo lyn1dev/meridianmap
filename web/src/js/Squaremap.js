@@ -2,7 +2,6 @@ import { Sidebar } from "./Sidebar.js";
 import { PlayerList } from "./PlayerList.js";
 import { WorldList } from "./WorldList.js";
 import { UICoordinates } from "./UICoordinates.js";
-import { UILink } from "./UILink.js";
 import { LayerControl } from "./LayerControl.js";
 import { Shops } from "./Shops.js";
 import L from "leaflet";
@@ -28,8 +27,6 @@ class SquaremapMap {
     worldList;
     /** @type {UICoordinates} */
     coordinates;
-    /** @type {UILink} */
-    uiLink;
     /** @type {number} */
     tick_count;
     /** @type {boolean} */
@@ -95,7 +92,6 @@ class SquaremapMap {
                     json.ui.coordinates,
                     this.getUrlParam("show_coordinates", "true") === "true",
                 );
-                this.uiLink = new UILink(json.ui.link, this.getUrlParam("show_link_button", "true") === "true");
 
                 this.showControls = this.getUrlParam("show_controls", "true") === "true";
                 if (!this.showControls) {
@@ -189,9 +185,6 @@ class SquaremapMap {
         }
         if (!this.showControls) {
             link += "&show_controls=false";
-        }
-        if (!this.uiLink.showLinkButton) {
-            link += "&show_link_button=false";
         }
         if (!this.coordinates.showCoordinates) {
             link += "&show_coordinates=false";
