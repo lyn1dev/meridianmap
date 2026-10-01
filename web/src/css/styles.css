@@ -98,6 +98,21 @@ input {
     color: var(--body);
     text-decoration: none;
 }
+#topbar .links a.rules {
+    color: var(--accent);
+    border-color: rgba(245, 200, 61, 0.45);
+}
+#topbar .links a.store {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1a1403;
+    font-weight: 600;
+}
+#topbar .links a.store:hover {
+    background: transparent;
+    color: var(--accent);
+}
+
 #topbar .links a:hover {
     border-color: var(--accent);
     color: var(--accent);
@@ -252,6 +267,42 @@ body.no-controls .leaflet-control-zoom {
 .shop-card .mono {
     font: 12px/1.6 var(--mono);
     color: var(--accent);
+}
+
+/* town popups and tooltips (towns and nations layer) */
+.town-card {
+    min-width: 190px;
+}
+.town-card .c-head {
+    font: 600 15px/1.3 var(--sans);
+    color: var(--text);
+}
+.town-card .c-nation {
+    margin-bottom: 6px;
+    color: var(--accent);
+    font: 12px/1.4 var(--mono);
+}
+.town-card .c-nation:empty,
+.town-card .c-board:empty,
+.town-tip .muted:empty {
+    display: none;
+}
+.town-card .c-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--text);
+}
+.town-card .c-line span:first-child,
+.town-tip .muted {
+    color: var(--muted);
+}
+.town-card .c-board {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    color: var(--body);
+    font-style: italic;
 }
 
 /* right-click popup: copy coordinates */
