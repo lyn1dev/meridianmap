@@ -38,6 +38,21 @@ class World {
         this.marker_update_interval = 5;
         this.tiles_update_interval = 15;
         this.staticNeedsMarkerTick = false;
+        // Meridian: town icons (name -> Icon markers) and each town's federation colour, for the Federations overlay
+        this.townIcons = new Map();
+        this.federationColours = new Map();
+    }
+    /**
+     * Town icons take their diplomacy colour while the town panel's Diplomacy view is on, their federation's colour
+     * while the Federations overlay is shown, and their own colour otherwise.
+     */
+    retintTownIcons() {
+        const fed = this.markerLayers.get("meridian_federations");
+        const on = fed != null && S.map.hasLayer(fed);
+        for (const [name, icons] of this.townIcons) {
+            const colour = S.townPanel?.iconColour(name) ?? (on ? this.federationColours.get(name) : null);
+            for (const icon of icons) icon.retint(colour);
+        }
     }
     tick() {
         // refresh map tile layer
@@ -99,7 +114,8 @@ class World {
                     .setMaxZoom(this.zoom.max + this.zoom.extra);
 
                 // update page title
-                document.title = this.type === "normal" ? "Meridian Earth Map" : `${this.display_name} · Meridian Earth Map`;
+                document.title =
+                    this.type === "normal" ? "Meridian Earth Map" : `${this.display_name} · Meridian Earth Map`;
 
                 // setup background
                 document.getElementById("map").style.background = this.getBackground();
@@ -161,10 +177,45 @@ class World {
                 S.layerControl.addOverlay(entry.name, layer, entry.hide);
             }
 
+            // Meridian: squaremap leaves a shape's outline colour out of markers.json when it's the API default (pure
+            // blue), and Leaflet would draw its own light blue instead. A nation coloured #0000ff (Singapore) lost its
+            // outline colour that way, and with it the colour of its town icons.
+            for (const m of entry.markers) {
+                if (m.type !== "icon" && m.color == null) m.color = "#0000ff";
+            }
+
+            // Meridian: remember each town's federation colour (its tooltip reads "<b>Federation</b> Town · Nation")
+            if (entry.id === "meridian_federations") {
+                this.federationColours = new Map();
+                for (const m of entry.markers) {
+                    const town = (/<span class="muted">([^<·]+)/.exec(m.tooltip || "") || [])[1];
+                    if (town && m.color) this.federationColours.set(town.trim(), m.color);
+                }
+            }
+            // Meridian: town icons take their town's claim colour (the nation colour when the town is in a nation)
+            if (entry.id === "towny") {
+                this.townIcons = new Map();
+                S.townPanel?.resetClaims();
+                // Meridian: the town search in the side panel
+                S.towns?.update(entry.markers);
+                const colours = new Map();
+                const nameOf = (m) => (/<b>([^<]+)<\/b>/.exec(m.tooltip || "") || [])[1];
+                for (const m of entry.markers) {
+                    if (m.type === "polygon" && m.color && nameOf(m)) colours.set(nameOf(m), m.color);
+                }
+                for (const m of entry.markers) {
+                    if (m.type === "icon" && colours.has(nameOf(m))) m.tint = colours.get(nameOf(m));
+                }
+            }
+
             // setup the markers
             for (const shape in entry.markers) {
                 let marker;
                 const opts = new Options(entry.markers[shape]);
+                // Meridian: a town's land and icons open the town panel instead of MapTowny's popup
+                const town =
+                    entry.id === "towny" ? (/<b>([^<]+)<\/b>/.exec(entry.markers[shape].tooltip || "") || [])[1] : null;
+                if (town && S.townPanel) delete opts.popup;
                 switch (opts.pop("type")) {
                     case "rectangle":
                         marker = new Rectangle(opts);
@@ -183,13 +234,36 @@ class World {
                         break;
                     case "icon":
                         marker = new Icon(opts);
+                        if (entry.id === "towny" && marker.tint) {
+                            const name = (/<b>([^<]+)<\/b>/.exec(entry.markers[shape].tooltip || "") || [])[1];
+                            if (name) {
+                                if (!this.townIcons.has(name)) this.townIcons.set(name, []);
+                                this.townIcons.get(name).push(marker);
+                            }
+                        }
                         break;
                 }
                 if (marker != null) {
+                    if (town && S.townPanel) {
+                        marker.marker.on("click", (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            S.townPanel.open(town);
+                        });
+                        if (marker instanceof Polygon) S.townPanel.addClaim(town, marker.marker);
+                    }
                     marker.addTo(layer);
                 }
             }
         }
+        if (S.townPanel) S.townPanel.applyStyles();
+        else this.retintTownIcons();
+        if (!this.retintHooked) {
+            this.retintHooked = true;
+            S.map.on("layeradd layerremove", (e) => {
+                if (e.layer && e.layer.id === "meridian_federations") this.retintTownIcons();
+            });
+        }
+        S.globeRenderer?.syncOverlays();
     }
 }
 

@@ -117,6 +117,9 @@ class LayerControl {
 
         // Meridian: chest shops as a switchable layer
         S.shops?.attach();
+        // Meridian: real-world country borders (overworld only)
+        S.borders?.attach();
+        S.chunkGrid?.attach();
     }
     /**
      * @param world {World}

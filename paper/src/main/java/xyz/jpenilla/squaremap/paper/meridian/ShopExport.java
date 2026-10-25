@@ -85,8 +85,13 @@ public final class ShopExport implements Runnable {
                 if (l == null || l.getWorld() == null) {
                     continue;
                 }
-                final ItemStack stack = (ItemStack) item.invoke(shop);
                 final boolean isBuying = (boolean) buying.invoke(shop);
+                final @Nullable Integer left = remaining(shop, l, isBuying, stock, space);
+                // empty selling shops and full buying shops can't trade: left off the map
+                if (left != null && left == 0) {
+                    continue;
+                }
+                final ItemStack stack = (ItemStack) item.invoke(shop);
                 final Map<String, Object> m = new LinkedHashMap<>();
                 m.put("item", stack.getType().getKey().getKey());
                 m.put("amount", stacking.invoke(shop));
@@ -111,11 +116,8 @@ public final class ShopExport implements Runnable {
                 m.put("y", l.getBlockY());
                 m.put("z", l.getBlockZ());
                 m.put("town", townName(l));
-                if (l.isChunkLoaded()) {
-                    try {
-                        m.put("stock", (isBuying ? space : stock).invoke(shop));
-                    } catch (final ReflectiveOperationException ignored) {
-                    }
+                if (left != null && left > 0) {
+                    m.put("stock", left);
                 }
                 list.add(m);
             }
@@ -126,6 +128,26 @@ public final class ShopExport implements Runnable {
             }
         }
         return list;
+    }
+
+    /**
+     * What a shop has left to trade: items in stock when selling, room left when buying. Counted live in loaded areas;
+     * elsewhere QuickShop's own saved count from when the shop was last used. Null when unknown, negative when unlimited.
+     */
+    private static @Nullable Integer remaining(final Object shop, final Location l, final boolean isBuying,
+                                               final Method stock, final Method space) {
+        try {
+            if (l.isChunkLoaded()) {
+                return (Integer) (isBuying ? space : stock).invoke(shop);
+            }
+            final Object cache = shop.getClass().getMethod("getInventoryCountCache").invoke(shop);
+            if (!(boolean) cache.getClass().getMethod("initialized").invoke(cache)) {
+                return null;
+            }
+            return (Integer) cache.getClass().getMethod(isBuying ? "getSpace" : "getStock").invoke(cache);
+        } catch (final ReflectiveOperationException | ClassCastException e) {
+            return null;
+        }
     }
 
     /** QuickShop 6 names it bukkitLocation(); older builds used getLocation(). */

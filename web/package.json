@@ -17,5 +17,9 @@
         "vite": "^7.2.7"
     },
     "private": true,
-    "type": "module"
+    "type": "module",
+    "dependencies": {
+        "@types/three": "^0.186.0",
+        "three": "^0.186.1"
+    }
 }

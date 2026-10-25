@@ -32,19 +32,42 @@
     </head>
     <body>
         <header id="topbar">
-            <a class="brand" href="https://meridianmc.xyz/" aria-label="Meridian home">
-                <img src="images/logo.png" alt="" width="30" height="30" />
-                <span class="wordmark">Meridian</span>
-                <span class="sub">Earth Map</span>
-            </a>
+            <div class="topbar-left">
+                <a class="brand" href="https://meridianmc.xyz/" aria-label="Meridian home">
+                    <img src="images/logo.png" alt="" width="30" height="30" />
+                    <span class="wordmark">Meridian</span>
+                    <span class="sub">Earth Map</span>
+                </a>
+                <div id="view-mode-toggle" class="view-toggle" role="group" aria-label="Map view mode">
+                    <button id="btn-view-globe" class="view-btn active" type="button" aria-pressed="true" title="3D Globe View">
+                        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.5"/><ellipse cx="8" cy="8" rx="3.2" ry="6.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/></svg>
+                        <span>Globe</span>
+                    </button>
+                    <button id="btn-view-flat" class="view-btn" type="button" aria-pressed="false" title="2D Flat Map">
+                        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="2 4 6 2 10 4 14 2 14 12 10 14 6 12 2 14"/><line x1="6" y1="2" x2="6" y2="12"/><line x1="10" y1="4" x2="10" y2="14"/></svg>
+                        <span>Flat</span>
+                    </button>
+                    <div id="view-tutorial-bubble" class="view-tutorial" hidden>
+                        <div class="tutorial-arrow"></div>
+                        <div class="tutorial-content">
+                            <span class="tutorial-tag">NEW</span>
+                            <div class="tutorial-title">3D Globe / Flat Map</div>
+                            <div class="tutorial-desc">Switch between 3D Globe and 2D Flat view anytime right here.</div>
+                            <button id="btn-dismiss-tutorial" class="tutorial-btn" type="button">Got it</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <nav class="links" aria-label="Meridian sites">
                 <a href="https://meridianmc.xyz/wiki/">Wiki</a>
                 <a href="https://stats.meridianmc.xyz/">Stats</a>
+                <a class="vote" href="https://meridianmc.xyz/vote/">Vote</a>
                 <a class="rules" href="https://rules.meridianmc.xyz/">Rules</a>
                 <a class="store" href="https://store.meridianmc.xyz/">Store</a>
             </nav>
         </header>
 
+        <div id="globe-container"></div>
         <div id="map"></div>
 
         <aside id="msidebar" aria-label="Map panel">
@@ -73,6 +96,19 @@
                         <input id="player-search" class="search" type="search" placeholder="Find a player" autocomplete="off" spellcheck="false" aria-label="Find a player" />
                         <div id="player-list" class="plist"></div>
                         <p id="player-empty" class="empty">Nobody is online right now.</p>
+                    </div>
+                </section>
+
+                <section class="cat" id="cat-towns" data-open="false">
+                    <button class="cat-h" type="button" aria-expanded="false">
+                        <span class="cat-t">Towns</span>
+                        <span id="town-count" class="chip">0</span>
+                        <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+                    </button>
+                    <div class="cat-b" hidden>
+                        <input id="town-search" class="search" type="search" placeholder="Find a town or nation" autocomplete="off" spellcheck="false" aria-label="Find a town or nation" />
+                        <p id="town-meta" class="meta"></p>
+                        <div id="town-list" class="tlist"></div>
                     </div>
                 </section>
 
